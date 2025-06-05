@@ -112,6 +112,7 @@ export default function ComplexityComparison() {
     const callMap = new Map<string, CallRecord>()
 
     const dfs = (i: number, j: number, depth: number, parent?: CallRecord): number => {
+      
       callCount++
       const key = `${i},${j}`
 
@@ -542,6 +543,13 @@ export default function ComplexityComparison() {
                 <strong>{(result.nonMemoizedCalls / result.memoizedCalls).toFixed(1)} 倍</strong>， 执行时间从{" "}
                 {result.executionTime.nonMemoized.toFixed(2)}ms 减少到 {result.executionTime.memoized.toFixed(2)}ms。
                 随着问题规模增大，这个差距会变得更加显著。
+              </p>
+            </div>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-semibold text-blue-800 mb-2">如何看这个图</h4>
+              <p className="text-sm text-blue-700">
+                如对于 [2,5]  记忆化搜索 被调用了2次 分别是 [1,1]&[2,5] 以及  [0,1]&[2,5]
+                在搜索过程中，在 [0,0]&[1,5]合并过程算出来了,因此对于[0,1]合并[2,5]时就不需要重复计算了。
               </p>
             </div>
           </CardContent>

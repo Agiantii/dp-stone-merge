@@ -440,6 +440,12 @@ export default function StoneMergeVisualization() {
                   贪心算法
                 </Button>
               </Link>
+              <Link href="https://github.com/Agiantii/dp-stone-merge">
+                <Button variant="outline" size="sm">
+                  <BarChart3 className="w-4 h-4 mr-1 from-neutral-200" />
+                   github repo
+                </Button>
+              </Link>
             </div>
           </CardTitle>
         </CardHeader>
