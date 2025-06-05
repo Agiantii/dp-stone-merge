@@ -32,7 +32,7 @@ interface ComparisonResult {
 
 export default function ComplexityComparison() {
   const [stones, setStones] = useState([1, 3, 3, 2, 3, 5])
-  const [inputValue, setInputValue] = useState("1,3,3,2")
+  const [inputValue, setInputValue] = useState("1, 3, 3, 2, 3, 5")
   const [result, setResult] = useState<ComparisonResult | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
   const [activeTab, setActiveTab] = useState("memoized")

@@ -542,7 +542,7 @@ export default function StoneMergeVisualization() {
               } else if (activeTab === "user") {
                 // 用户模式下的选中高亮
                 if (selectedIndices.includes(index)) {
-                  fillColor = "#3B82F6"
+                  fillColor = "red"
                   strokeColor = "#1D4ED8"
                   strokeWidth = "3"
                 }
