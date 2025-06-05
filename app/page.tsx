@@ -1,10 +1,10 @@
 "use client"
 
-import StoneMergeVisualization from "../stone-merge-visualization"
+import StoneMergeVisualization from "../components/view/stone-merge-visualization"
 
 export default function Page() {
   return (
-    <div>
+    <div >
       <StoneMergeVisualization />
     </div>
   )

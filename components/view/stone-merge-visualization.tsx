@@ -603,7 +603,7 @@ export default function StoneMergeVisualization() {
         ) : (
           <>
             <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-[#3B82F6] rounded"></div>
+                <div className="w-4 h-4 bg-[#EF4444] rounded"></div>
               <span className="text-sm">已选择的堆</span>
             </div>
             <div className="flex items-center gap-1">
