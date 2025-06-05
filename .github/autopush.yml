@@ -3,7 +3,7 @@ name: Auto Push to Server
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   deploy_job:
     runs-on: ubuntu-latest
