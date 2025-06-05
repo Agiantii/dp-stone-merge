@@ -252,11 +252,12 @@ export default function ComplexityComparison() {
         .split(",")
         .map((s) => Number.parseInt(s.trim()))
         .filter((n) => !isNaN(n))
-      if (newStones.length >= 2 && newStones.length <= 6) {
+      if (newStones.length >= 2 && newStones.length <= 10) {
         setStones(newStones)
         setResult(null)
       }
     } catch (error) {
+      alert("请输入小于10个石子数量，使用逗号分隔")
       console.error("Invalid input")
     }
   }
