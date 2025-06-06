@@ -564,7 +564,7 @@ export default function StoneMergeVisualization() {
                   } else if (activeTab === "user") {
                     // 用户模式下的选中高亮
                     if (selectedIndices.includes(index)) {
-                      fillColor = "#3B82F6"
+                      fillColor = "#af2727"
                       strokeColor = "#1D4ED8"
                       strokeWidth = "3"
                     }
@@ -632,7 +632,7 @@ export default function StoneMergeVisualization() {
             ) : (
               <>
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 bg-[#3B82F6] rounded"></div>
+                    <div className="w-4 h-4 bg-[#af2727] rounded"></div>
                   <span className="text-sm">已选择的堆</span>
                 </div>
                 <div className="flex items-center gap-1">
