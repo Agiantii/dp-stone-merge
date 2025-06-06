@@ -31,13 +31,15 @@ interface ComparisonResult {
 }
 
 export default function ComplexityComparison() {
-  const [stones, setStones] = useState([1, 3, 3, 2, 3, 5])
-  const [inputValue, setInputValue] = useState("1, 3, 3, 2, 3, 5")
+  const [stones, setStones] = useState([1, 3, 3, 2, 3])
+  const [inputValue, setInputValue] = useState("1, 3, 3, 2, 3")
   const [result, setResult] = useState<ComparisonResult | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
   const [activeTab, setActiveTab] = useState("memoized")
   const [showCodeCard, setShowCodeCard] = useState(false)
   const [codeType, setCodeType] = useState<"memoized" | "nonMemoized">("memoized")
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const [showZoomControls, setShowZoomControls] = useState(false)
 
   const memoizedCppCode = `int stoneGameMemo(vector<int>& stones) {
     int n = stones.size();
@@ -112,7 +114,6 @@ export default function ComplexityComparison() {
     const callMap = new Map<string, CallRecord>()
 
     const dfs = (i: number, j: number, depth: number, parent?: CallRecord): number => {
-      
       callCount++
       const key = `${i},${j}`
 
@@ -242,6 +243,7 @@ export default function ComplexityComparison() {
       },
     })
 
+    setShowZoomControls(true)
     setIsCalculating(false)
   }
 
@@ -252,12 +254,11 @@ export default function ComplexityComparison() {
         .split(",")
         .map((s) => Number.parseInt(s.trim()))
         .filter((n) => !isNaN(n))
-      if (newStones.length >= 2 && newStones.length <= 10) {
+      if (newStones.length >= 2 && newStones.length <= 20) {
         setStones(newStones)
         setResult(null)
       }
     } catch (error) {
-      alert("请输入小于10个石子数量，使用逗号分隔")
       console.error("Invalid input")
     }
   }
@@ -265,23 +266,40 @@ export default function ComplexityComparison() {
   // 重置
   const reset = () => {
     setResult(null)
+    setShowZoomControls(false)
+    setZoomLevel(1)
   }
 
-  // 渲染树节点
+  // 修改渲染树节点函数，使用更智能的布局算法
   const renderTreeNode = (node: CallRecord, x: number, y: number, level: number, maxWidth: number) => {
-    const nodeSize = Math.max(20, Math.min(60, 20 + node.count * 3))
+    const nodeSize = Math.max(20, Math.min(40, 20 + node.count * 2)) // 减小节点最大尺寸
     const color = node.count === 1 ? "#10B981" : `hsl(${Math.max(0, 120 - node.count * 10)}, 70%, 50%)`
 
     const children = node.children || []
-    const childSpacing = maxWidth / Math.max(1, children.length)
+
+    // 计算子节点的总宽度需求
+    const childrenWidthNeeds = children.map((child) => {
+      // 估算每个子树需要的宽度
+      const childSubtreeSize = countSubtreeNodes(child)
+      return Math.max(60, childSubtreeSize * 40) // 每个节点至少需要60px宽度
+    })
+
+    const totalWidthNeeded = childrenWidthNeeds.reduce((sum, width) => sum + width, 0)
+    const widthScale = totalWidthNeeded > maxWidth ? maxWidth / totalWidthNeeded : 1
+
+    // 计算每个子节点的实际宽度和位置
+    let currentX = x - (totalWidthNeeded * widthScale) / 2
 
     return (
       <g key={`${node.i}-${node.j}-${level}`}>
         {/* 连接线到子节点 */}
         {children.map((child, index) => {
-          const childX = x - maxWidth / 2 + childSpacing * (index + 0.5)
-          const childY = y + 100
-          return (
+          const childWidth = childrenWidthNeeds[index] * widthScale
+          const childX = currentX + childWidth / 2
+          const childY = y + 120 // 增加垂直间距
+
+          // 更新当前X位置，为下一个子节点准备
+          const lineResult = (
             <line
               key={`line-${child.i}-${child.j}`}
               x1={x}
@@ -292,6 +310,9 @@ export default function ComplexityComparison() {
               strokeWidth="1"
             />
           )
+
+          currentX += childWidth
+          return lineResult
         })}
 
         {/* 当前节点 */}
@@ -307,27 +328,55 @@ export default function ComplexityComparison() {
 
         {/* 递归渲染子节点 */}
         {children.map((child, index) => {
-          const childX = x - maxWidth / 2 + childSpacing * (index + 0.5)
-          const childY = y + 100
-          const childMaxWidth = (maxWidth / Math.max(1, children.length)) * 0.8
+          const childWidth = childrenWidthNeeds[index] * widthScale
+          const childX =
+            x -
+            (totalWidthNeeded * widthScale) / 2 +
+            childrenWidthNeeds.slice(0, index).reduce((sum, w) => sum + w * widthScale, 0) +
+            childWidth / 2
+          const childY = y + 120 // 增加垂直间距
 
-          return renderTreeNode(child, childX, childY, level + 1, childMaxWidth)
+          return renderTreeNode(
+            child,
+            childX,
+            childY,
+            level + 1,
+            childWidth * 0.95, // 留一点边距
+          )
         })}
       </g>
     )
   }
 
-  // 计算树的最大宽度
-  const calculateTreeWidth = (node: CallRecord, level = 0): number => {
+  // 添加一个辅助函数来计算子树中的节点数量
+  const countSubtreeNodes = (node: CallRecord): number => {
     if (!node.children || node.children.length === 0) {
-      return 80
+      return 1
+    }
+    return 1 + node.children.reduce((sum, child) => sum + countSubtreeNodes(child), 0)
+  }
+
+  // 修改计算树高度的函数，增加垂直间距
+  const calculateTreeHeight = (node: CallRecord, level = 0): number => {
+    if (!node.children || node.children.length === 0) {
+      return level * 120 + 100 // 每层120px高度，加上节点本身的高度
     }
 
-    const childWidths = node.children.map((child) => calculateTreeWidth(child, level + 1))
-    return Math.max(
-      200,
-      childWidths.reduce((sum, width) => sum + width, 0),
-    )
+    const childHeights = node.children.map((child) => calculateTreeHeight(child, level + 1))
+    return Math.max(...childHeights)
+  }
+
+  const calculateTreeWidth = (node: CallRecord): number => {
+    if (!node.children || node.children.length === 0) {
+      return 100
+    }
+
+    let width = 0
+    for (const child of node.children) {
+      width += calculateTreeWidth(child)
+    }
+
+    return Math.max(800, width)
   }
 
   const showCode = (type: "memoized" | "nonMemoized") => {
@@ -369,7 +418,9 @@ export default function ComplexityComparison() {
             />
             <Button onClick={handleInputChange}>更新</Button>
           </div>
-
+          <p>
+            请输入石子数量,如 1, 3, 3, 2, 3 建议输入2-6个数字以便于可视化。
+          </p>
           <div className="flex gap-2">
             <Button onClick={runComparison} disabled={isCalculating}>
               {isCalculating ? (
@@ -448,11 +499,36 @@ export default function ComplexityComparison() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                {showZoomControls && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
+                      disabled={zoomLevel <= 0.5}
+                    >
+                      缩小
+                    </Button>
+                    <span className="text-sm text-gray-600">缩放: {(zoomLevel * 100).toFixed(0)}%</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setZoomLevel(Math.min(3, zoomLevel + 0.25))}
+                      disabled={zoomLevel >= 3}
+                    >
+                      放大
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setZoomLevel(1)}>
+                      重置
+                    </Button>
+                  </div>
+                )}
+                <div className="overflow-auto border rounded-lg" style={{ maxHeight: "600px" }}>
                   <svg
-                    width={Math.max(800, calculateTreeWidth(result.memoizedTree))}
-                    height="600"
-                    viewBox={`0 0 ${Math.max(800, calculateTreeWidth(result.memoizedTree))} 600`}
+                    width={Math.max(800, calculateTreeWidth(result.memoizedTree)) * zoomLevel}
+                    height={Math.max(600, calculateTreeHeight(result.memoizedTree)) * zoomLevel}
+                    viewBox={`0 0 ${Math.max(800, calculateTreeWidth(result.memoizedTree))} ${Math.max(600, calculateTreeHeight(result.memoizedTree))}`}
+                    style={{ display: "block" }}
                   >
                     {renderTreeNode(
                       result.memoizedTree,
@@ -482,11 +558,36 @@ export default function ComplexityComparison() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                {showZoomControls && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
+                      disabled={zoomLevel <= 0.5}
+                    >
+                      缩小
+                    </Button>
+                    <span className="text-sm text-gray-600">缩放: {(zoomLevel * 100).toFixed(0)}%</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setZoomLevel(Math.min(3, zoomLevel + 0.25))}
+                      disabled={zoomLevel >= 3}
+                    >
+                      放大
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setZoomLevel(1)}>
+                      重置
+                    </Button>
+                  </div>
+                )}
+                <div className="overflow-auto border rounded-lg" style={{ maxHeight: "600px" }}>
                   <svg
-                    width={Math.max(800, calculateTreeWidth(result.nonMemoizedTree))}
-                    height="600"
-                    viewBox={`0 0 ${Math.max(800, calculateTreeWidth(result.nonMemoizedTree))} 600`}
+                    width={Math.max(800, calculateTreeWidth(result.nonMemoizedTree)) * zoomLevel}
+                    height={Math.max(600, calculateTreeHeight(result.nonMemoizedTree)) * zoomLevel}
+                    viewBox={`0 0 ${Math.max(800, calculateTreeWidth(result.nonMemoizedTree))} ${Math.max(600, calculateTreeHeight(result.nonMemoizedTree))}`}
+                    style={{ display: "block" }}
                   >
                     {renderTreeNode(
                       result.nonMemoizedTree,
@@ -549,8 +650,8 @@ export default function ComplexityComparison() {
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
               <h4 className="font-semibold text-blue-800 mb-2">如何看这个图</h4>
               <p className="text-sm text-blue-700">
-                如对于 [2,5]  记忆化搜索 被调用了2次 分别是 [1,1]&[2,5] 以及  [0,1]&[2,5]
-                在搜索过程中，在 [0,0]&[1,5]合并过程算出来了,因此对于[0,1]合并[2,5]时就不需要重复计算了。
+                如对于 [2,5] 记忆化搜索 被调用了2次 分别是 [1,1]&[2,5] 以及 [0,1]&[2,5] 在搜索过程中，在
+                [0,0]&[1,5]合并过程算出来了,因此对于[0,1]合并[2,5]时就不需要重复计算了。
               </p>
             </div>
           </CardContent>

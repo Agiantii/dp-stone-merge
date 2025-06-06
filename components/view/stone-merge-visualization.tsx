@@ -17,6 +17,7 @@ import {
   Code,
   Copy,
   X,
+  Github,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -247,6 +248,7 @@ export default function StoneMergeVisualization() {
   const handleInputChange = () => {
     try {
       const newStones = inputValue
+        .replace("，", ",")
         .split(",")
         .map((s) => Number.parseInt(s.trim()))
         .filter((n) => !isNaN(n))
@@ -418,7 +420,8 @@ export default function StoneMergeVisualization() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    <div className="w-full max-w-7xl mx-auto p-6 space-y-6">
+      {/* 顶部控制卡片保持不变 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -440,12 +443,12 @@ export default function StoneMergeVisualization() {
                   贪心算法
                 </Button>
               </Link>
-              <Link href="https://github.com/Agiantii/dp-stone-merge">
-                <Button variant="outline" size="sm">
-                  <BarChart3 className="w-4 h-4 mr-1 from-neutral-200" />
-                   github repo
-                </Button>
-              </Link>
+              <Button variant="outline" size="sm" asChild>
+                <a href="https://github.com/Agiantii/dp-stone-merge" target="_blank" rel="noopener noreferrer">
+                  <Github className="w-4 h-4 mr-1" />
+                  GitHub
+                </a>
+              </Button>
             </div>
           </CardTitle>
         </CardHeader>
@@ -454,6 +457,15 @@ export default function StoneMergeVisualization() {
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onPaste={(e) => {
+                // 延迟处理粘贴事件，确保粘贴的内容已经更新到input中
+                setTimeout(() => {
+                  const target = e.currentTarget
+                  if (target && target.value !== null && target.value !== undefined) {
+                    setInputValue(target.value)
+                  }
+                }, 0)
+              }}
               placeholder="输入石子数量，用逗号分隔"
               className="flex-1"
             />
@@ -524,213 +536,232 @@ export default function StoneMergeVisualization() {
         </CardContent>
       </Card>
 
-      {/* 石子可视化 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>当前石子状态</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <svg width="100%" height="150" viewBox={`0 0 ${Math.max(800, currentStones.length * 120)} 150`}>
-            {currentStones.map((stone, index) => {
-              // 确定当前石子堆的样式
-              let fillColor = "#8B5CF6"
-              let strokeColor = "#6D28D9"
-              let strokeWidth = "2"
+      {/* 主要内容区域 - 左右分栏布局 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 左侧内容区域 */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* 石子可视化 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>当前石子状态</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <svg width="100%" height="150" viewBox={`0 0 ${Math.max(800, currentStones.length * 120)} 150`}>
+                {currentStones.map((stone, index) => {
+                  // 确定当前石子堆的样式
+                  let fillColor = "#8B5CF6"
+                  let strokeColor = "#6D28D9"
+                  let strokeWidth = "2"
 
-              if (activeTab === "auto" && currentStep >= 0 && mergeSteps[currentStep]) {
-                // 自动模式下的高亮
-                const step = mergeSteps[currentStep]
-                if (step.highlightIndices.includes(index)) {
-                  fillColor = "#EF4444"
-                  strokeColor = "#B91C1C"
-                  strokeWidth = "3"
-                }
-              } else if (activeTab === "user") {
-                // 用户模式下的选中高亮
-                if (selectedIndices.includes(index)) {
-                  fillColor = "red"
-                  strokeColor = "#1D4ED8"
-                  strokeWidth = "3"
-                }
-              }
+                  if (activeTab === "auto" && currentStep >= 0 && mergeSteps[currentStep]) {
+                    // 自动模式下的高亮
+                    const step = mergeSteps[currentStep]
+                    if (step.highlightIndices.includes(index)) {
+                      fillColor = "#EF4444"
+                      strokeColor = "#B91C1C"
+                      strokeWidth = "3"
+                    }
+                  } else if (activeTab === "user") {
+                    // 用户模式下的选中高亮
+                    if (selectedIndices.includes(index)) {
+                      fillColor = "#3B82F6"
+                      strokeColor = "#1D4ED8"
+                      strokeWidth = "3"
+                    }
+                  }
 
-              return (
-                <g
-                  key={index}
-                  onClick={() => handleStoneClick(index)}
-                  style={{ cursor: activeTab === "user" ? "pointer" : "default" }}
-                >
-                  <rect
-                    x={index * 120 + 50}
-                    y={30}
-                    width={100}
-                    height={60}
-                    fill={fillColor}
-                    stroke={strokeColor}
-                    strokeWidth={strokeWidth}
-                    rx="8"
-                  />
-                  <text x={index * 120 + 100} y={65} textAnchor="middle" fill="white" fontSize="18" fontWeight="bold">
-                    {stone}
-                  </text>
-                  {/* 区间标记 */}
-                  <text
-                    x={index * 120 + 100}
-                    y={110}
-                    textAnchor="middle"
-                    fill="#374151"
-                    fontSize="14"
-                    fontWeight="bold"
-                  >
-                    [{currentIntervals[index]?.start ?? 0}, {currentIntervals[index]?.end ?? 0}]
-                  </text>
-                  <text x={index * 120 + 100} y={130} textAnchor="middle" fill="#6B7280" fontSize="12">
-                    堆 {index}
-                  </text>
-                </g>
-              )
-            })}
-          </svg>
-        </CardContent>
-      </Card>
+                  return (
+                    <g
+                      key={index}
+                      onClick={() => handleStoneClick(index)}
+                      style={{ cursor: activeTab === "user" ? "pointer" : "default" }}
+                    >
+                      <rect
+                        x={index * 120 + 50}
+                        y={30}
+                        width={100}
+                        height={60}
+                        fill={fillColor}
+                        stroke={strokeColor}
+                        strokeWidth={strokeWidth}
+                        rx="8"
+                      />
+                      <text
+                        x={index * 120 + 100}
+                        y={65}
+                        textAnchor="middle"
+                        fill="white"
+                        fontSize="18"
+                        fontWeight="bold"
+                      >
+                        {stone}
+                      </text>
+                      {/* 区间标记 */}
+                      <text
+                        x={index * 120 + 100}
+                        y={110}
+                        textAnchor="middle"
+                        fill="#374151"
+                        fontSize="14"
+                        fontWeight="bold"
+                      >
+                        [{currentIntervals[index]?.start ?? 0}, {currentIntervals[index]?.end ?? 0}]
+                      </text>
+                      <text x={index * 120 + 100} y={130} textAnchor="middle" fill="#6B7280" fontSize="12">
+                        堆 {index}
+                      </text>
+                    </g>
+                  )
+                })}
+              </svg>
+            </CardContent>
+          </Card>
 
-      <div className="mt-2 flex items-center gap-4 flex-wrap">
-        {activeTab === "auto" ? (
-          <>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-[#EF4444] rounded"></div>
-              <span className="text-sm">正在合并的堆</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-[#8B5CF6] rounded"></div>
-              <span className="text-sm">未参与当前合并</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-[#EF4444] rounded"></div>
-              <span className="text-sm">已选择的堆</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-[#8B5CF6] rounded"></div>
-              <span className="text-sm">未选择的堆</span>
-            </div>
-          </>
-        )}
+          <div className="mt-2 flex items-center gap-4 flex-wrap">
+            {activeTab === "auto" ? (
+              <>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 bg-[#EF4444] rounded"></div>
+                  <span className="text-sm">正在合并的堆</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 bg-[#8B5CF6] rounded"></div>
+                  <span className="text-sm">未参与当前合并</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 bg-[#3B82F6] rounded"></div>
+                  <span className="text-sm">已选择的堆</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 bg-[#8B5CF6] rounded"></div>
+                  <span className="text-sm">未选择的堆</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 用户合并历史 */}
+          {activeTab === "user" && userMergeSteps.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>你的合并历史</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {userMergeSteps.map((step, index) => (
+                    <div key={index} className="p-3 rounded border bg-gray-50 border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <span>
+                          步骤 {index + 1}: 合并堆 {step.firstIndex} 和堆 {step.secondIndex}，代价: {step.cost}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* DP表格 */}
+          {dpState && (
+            <Card>
+              <CardHeader>
+                <CardTitle>DP表格 (dp[i][j] = 合并第i堆到第j堆的最小代价)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="border-collapse border border-gray-300">
+                    <thead>
+                      <tr>
+                        <th className="border border-gray-300 p-2 bg-gray-100">i\j</th>
+                        {stones.map((_, j) => (
+                          <th key={j} className="border border-gray-300 p-2 bg-gray-100">
+                            {j}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stones.map((_, i) => (
+                        <tr key={i}>
+                          <td className="border border-gray-300 p-2 bg-gray-100 font-bold">{i}</td>
+                          {stones.map((_, j) => (
+                            <td
+                              key={j}
+                              className={`border border-gray-300 p-2 text-center ${i <= j
+                                  ? i === j
+                                    ? "0"
+                                    : dpState?.dp?.[i]?.[j] !== undefined && dpState.dp[i][j] !== null
+                                      ? dpState.dp[i][j]
+                                      : "-"
+                                  : "bg-gray-50"
+                                }`}
+                            >
+                              {i <= j
+                                ? i === j
+                                  ? "0"
+                                  : dpState.dp[i] && dpState.dp[i][j] !== undefined
+                                    ? dpState.dp[i][j]
+                                    : "-"
+                                : "-"}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-2 text-sm text-gray-600">
+                  <p>
+                    最优解总代价:{" "}
+                    <span className="font-bold text-lg text-blue-600">{dpState.dp[0][stones.length - 1]}</span>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* 右侧合并过程 */}
+        <div className="lg:col-span-1">
+          {activeTab === "auto" && (
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle>
+                  合并过程 ({currentStep + 1}/{mergeSteps.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {mergeSteps.map((step, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded border text-sm ${index === currentStep
+                          ? "bg-blue-100 border-blue-300"
+                          : index < currentStep
+                            ? "bg-green-50 border-green-200"
+                            : "bg-gray-50 border-gray-200"
+                        }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className={index <= currentStep ? "font-medium" : "text-gray-500"}>
+                          步骤 {index + 1}: {step.description}
+                        </span>
+                        {index === currentStep && <span className="text-blue-600 font-bold text-xs">← 当前</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
-      {/* 用户合并历史 */}
-      {activeTab === "user" && userMergeSteps.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>你的合并历史</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {userMergeSteps.map((step, index) => (
-                <div key={index} className="p-3 rounded border bg-gray-50 border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span>
-                      步骤 {index + 1}: 合并堆 {step.firstIndex} 和堆 {step.secondIndex}，代价: {step.cost}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* DP表格 */}
-      {dpState && (
-        <Card>
-          <CardHeader>
-            <CardTitle>DP表格 (dp[i][j] = 合并第i堆到第j堆的最小代价)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="border-collapse border border-gray-300">
-                <thead>
-                  <tr>
-                    <th className="border border-gray-300 p-2 bg-gray-100">i\j</th>
-                    {stones.map((_, j) => (
-                      <th key={j} className="border border-gray-300 p-2 bg-gray-100">
-                        {j}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {stones.map((_, i) => (
-                    <tr key={i}>
-                      <td className="border border-gray-300 p-2 bg-gray-100 font-bold">{i}</td>
-                      {stones.map((_, j) => (
-                        <td
-                          key={j}
-                          className={`border border-gray-300 p-2 text-center ${
-                            i <= j
-                              ? j - i === 1
-                                ? "bg-yellow-100"
-                                : j - i > 1
-                                  ? "bg-blue-100"
-                                  : "bg-white"
-                              : "bg-gray-50"
-                          }`}
-                        >
-                          {i <= j ? (i === j ? "0" : dpState.dp[i][j] || "-") : "-"}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              <p>
-                最优解总代价:{" "}
-                <span className="font-bold text-lg text-blue-600">{dpState.dp[0][stones.length - 1]}</span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 合并步骤 */}
-      {activeTab === "auto" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              合并过程 ({currentStep + 1}/{mergeSteps.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {mergeSteps.map((step, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded border ${
-                    index === currentStep
-                      ? "bg-blue-100 border-blue-300"
-                      : index < currentStep
-                        ? "bg-green-50 border-green-200"
-                        : "bg-gray-50 border-gray-200"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className={index <= currentStep ? "font-medium" : "text-gray-500"}>
-                      步骤 {index + 1}: {step.description}
-                    </span>
-                    {index === currentStep && <span className="text-blue-600 font-bold">← 当前</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 代码卡片弹窗 */}
+      {/* 代码卡片弹窗保持不变 */}
       {showCodeCard && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden">
