@@ -170,7 +170,7 @@ export default function StoneMergeVisualization() {
     }
 
     generateSteps(0, stones.length - 1, stones)
-
+    console.log(steps)
     // 现在模拟实际的合并过程来生成每一步的状态
     const simulateSteps = () => {
       let currentStones = [...stones]
